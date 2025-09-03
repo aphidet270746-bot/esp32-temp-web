@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>Temperature (Firebase)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1220;color:#e8eefc}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+    .temp{font-size:72px;font-weight:700;letter-spacing:1px}
+    .muted{color:#9fb0d0}
+    .pill{background:#19233a;border:1px solid #223053;border-radius:999px;padding:4px 10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="temp" id="temp">--.-- °C</div>
+    <div class="muted">
+      CAN ID: <span class="pill">512 (0x200)</span>
+      &nbsp;•&nbsp; เวลา: <span id="time" class="pill">--:--:--</span>
+    </div>
+    <div class="muted" id="status">กำลังเชื่อมต่อ Firebase…</div>
+  </div>
+
+  <!-- Firebase SDK (v9 modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, query, limitToLast, onChildAdded, onChildChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+
+    // === ใช้ค่าโปรเจกต์ของคุณ ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyAoZDCuGHeqiywWWWhw_1rvVUx6kOFxum0",
+      authDomain: "data-logger-f-19.firebaseapp.com",
+      databaseURL: "https://data-logger-f-19-default-rtdb.firebaseio.com",
+      projectId: "data-logger-f-19"
+    };
+
+    const app  = initializeApp(firebaseConfig);
+    const db   = getDatabase(app);
+    const auth = getAuth(app);
+
+    const $ = id => document.getElementById(id);
+    const show = (temp_c, time) => {
+      $('temp').textContent = `${Number(temp_c).toFixed(2)} °C`;
+      $('time').textContent = time || new Date().toLocaleTimeString();
+      $('status').textContent = 'อัปเดตแบบเรียลไทม์จาก Firebase';
+    };
+
+    // เข้าสู่ระบบแบบ Anonymous (ต้องเปิด Anonymous sign-in ใน Firebase Console)
+    signInAnonymously(auth).catch(err => $('status').textContent = 'Auth error: ' + err.message);
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return;
+      $('status').textContent = 'เชื่อมต่อแล้ว กำลังรอข้อมูล…';
+
+      // ดึงเฉพาะ entry ล่าสุดจาก /can_data/200 (ID 512) แบบ Realtime
+      const qLatest = query(ref(db, 'can_data/200'), limitToLast(1));
+
+      const handleSnap = snap => {
+        const v = snap.val();
+        if (!v) return;
+        // คาดว่า ESP32 ส่งฟิลด์ temp_c และ time มาอยู่แล้ว
+        show(v.temp_c ?? '--', v.time ?? null);
+      };
+
+      onChildAdded(qLatest, handleSnap);
+      onChildChanged(qLatest, handleSnap);
+    });
+  </script>
+</body>
+</html>
