@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CMU Racing Team – Graph Selector 💜</title>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body { font-family: "Sarabun", sans-serif; background:#f8f5fa; text-align:center; color:#4a0072; margin:0; }
+    header {
+      background: linear-gradient(90deg, #6A1B9A, #9C27B0);
+      color: white; padding: 12px; font-weight:bold; font-size:1.4em;
+      box-shadow:0 2px 8px rgba(0,0,0,0.2);
+    }
+    .selector {
+      margin: 20px auto;
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 12px;
+    }
+    .selector label {
+      background:white; border:2px solid #9c27b0; border-radius:10px;
+      padding:8px 16px; cursor:pointer; transition:0.2s;
+    }
+    .selector input { display:none; }
+    .selector input:checked + label {
+      background:#9c27b0; color:white; transform:scale(1.05);
+    }
+    canvas {
+      width:80%; max-width:900px; margin:20px auto; display:none;
+      background:white; border-radius:10px; box-shadow:0 2px 10px rgba(106,27,154,0.15);
+    }
+  </style>
+</head>
+<body>
+  <header>📊 CMU Racing Team – Interactive Telemetry Dashboard</header>
+
+  <div class="selector">
+    <input type="checkbox" id="v" onchange="toggleGraph('voltageGraph')">
+    <label for="v">Voltage (V)</label>
+
+    <input type="checkbox" id="i" onchange="toggleGraph('currentGraph')">
+    <label for="i">Current (A)</label>
+
+    <input type="checkbox" id="s" onchange="toggleGraph('speedGraph')">
+    <label for="s">Speed (rpm)</label>
+
+    <input type="checkbox" id="t" onchange="toggleGraph('tempGraph')">
+    <label for="t">Temperature (°C)</label>
+  </div>
+
+  <canvas id="voltageGraph"></canvas>
+  <canvas id="currentGraph"></canvas>
+  <canvas id="speedGraph"></canvas>
+  <canvas id="tempGraph"></canvas>
+
+  <script>
+    // ---------------- Firebase ----------------
+    const firebaseConfig = {
+      databaseURL: "https://test-data-f19-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ---------------- Chart.js Helper ----------------
+    const makeChart = (ctx, label, color) => new Chart(ctx, {
+      type: "line",
+      data: { labels: [], datasets: [{ label, data: [], borderColor: color, fill: false, tension: 0.25 }] },
+      options: { responsive: true }
+    });
+
+    const chartV = makeChart(document.getElementById("voltageGraph"), "Voltage (V)", "#8E24AA");
+    const chartI = makeChart(document.getElementById("currentGraph"), "Current (A)", "#CE93D8");
+    const chartS = makeChart(document.getElementById("speedGraph"), "Speed (rpm)", "#6A1B9A");
+    const chartT = makeChart(document.getElementById("tempGraph"), "Temperature (°C)", "#AB47BC");
+
+    function push(ch, val) {
+      if (!val && val !== 0) return;
+      if (ch.data.labels.length > 25) { ch.data.labels.shift(); ch.data.datasets[0].data.shift(); }
+      ch.data.labels.push(new Date().toLocaleTimeString());
+      ch.data.datasets[0].data.push(val);
+      ch.update();
+    }
+
+    // ---------------- Graph Toggle ----------------
+    function toggleGraph(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === "block" ? "none" : "block";
+    }
+
+    // ---------------- Data from Firebase ----------------
+    db.ref("/ESP32_Data/Location1").on("value", snap => {
+      const d = snap.val(); if (!d) return;
+      push(chartV, d.Voltage);
+      push(chartI, d.Current);
+      push(chartT, d.Temp_High);
+    });
+
+    db.ref("/ESP32_Data/Location2").on("value", snap => {
+      const d = snap.val(); if (!d) return;
+      push(chartS, d.Speed);
+    });
+  </script>
+</body>
+</html>
