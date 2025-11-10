@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CMU Racing Team – Telemetry Dashboard 💜</title>
-
   <link rel="icon" type="image/png" href="logoAuto.png">
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
@@ -18,7 +17,7 @@
       color: #2c003e;
     }
     header {
-      background: linear-gradient(90deg, #6A1B9A, #8E24AA);
+      background: linear-gradient(90deg,#6A1B9A,#8E24AA);
       color: white;
       padding: 15px 10px;
       display: flex;
@@ -33,78 +32,37 @@
       font-weight: bold;
       letter-spacing: 0.5px;
     }
-    header img { height: 55px; margin: 0 15px; transition: 0.3s; }
-    header img:hover { transform: scale(1.05); }
+    header img {height:55px;margin:0 15px;transition:0.3s;}
+    header img:hover{transform:scale(1.05);}
 
-    /* ปุ่มเสียงเตือน */
-    #muteBtn {
-      position: fixed;
-      bottom: 15px;
-      right: 15px;
-      background: #8E24AA;
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 1em;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-      transition: 0.3s;
+    /* ปุ่มเสียง */
+    #muteBtn{
+      position:fixed;
+      bottom:15px;
+      right:15px;
+      background:#8E24AA;
+      color:white;
+      border:none;
+      padding:10px 18px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:bold;
+      font-size:1em;
+      box-shadow:0 3px 8px rgba(0,0,0,0.3);
+      transition:0.3s;
     }
-    #muteBtn:hover {
-      background: #6A1B9A;
-      transform: scale(1.05);
-    }
+    #muteBtn:hover{background:#6A1B9A;transform:scale(1.05);}
 
-    .section-title {
-      text-align: center;
-      margin-top: 30px;
-      font-size: 1.3em;
-      color: #6A1B9A;
-      font-weight: bold;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      padding: 20px;
-      max-width: 1100px;
-      margin: auto;
-    }
-    .card {
-      background: white;
-      border-radius: 15px;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(106,27,154,0.15);
-      text-align: center;
-      border: 2px solid transparent;
-      transition: 0.2s;
-    }
-    .label { color: #7b1fa2; font-size: 1em; }
-    .value { font-size: 1.6em; font-weight: bold; margin-top: 8px; color: #4a0072; }
-    .no-update {
-      font-size: 0.85em;
-      color: #D32F2F;
-      margin-top: 6px;
-      display: none;
-    }
-    .timestamp {
-      text-align: center;
-      color: #4a0072;
-      font-size: 1em;
-      margin-top: 20px;
-      margin-bottom: 40px;
-    }
-    canvas {
-      background: white;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(106,27,154,0.2);
-      margin-bottom: 30px;
-    }
+    .section-title{text-align:center;margin-top:30px;font-size:1.3em;color:#6A1B9A;font-weight:bold;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;padding:20px;max-width:1100px;margin:auto;}
+    .card{background:white;border-radius:15px;padding:15px;box-shadow:0 4px 10px rgba(106,27,154,0.15);text-align:center;border:2px solid transparent;transition:0.2s;}
+    .label{color:#7b1fa2;font-size:1em;}
+    .value{font-size:1.6em;font-weight:bold;margin-top:8px;color:#4a0072;}
+    .no-update{font-size:0.85em;color:#D32F2F;margin-top:6px;display:none;}
+    .timestamp{text-align:center;color:#4a0072;font-size:1em;margin-top:20px;margin-bottom:40px;}
+    canvas{background:white;border-radius:10px;box-shadow:0 2px 8px rgba(106,27,154,0.2);margin-bottom:30px;}
   </style>
 </head>
-
 <body>
   <header>
     <img src="logoAuto.png" alt="AUTOCMU Logo">
@@ -132,121 +90,112 @@
   <div class="timestamp">⏱ Last Update: <span id="timestamp">--</span></div>
 
   <div class="section-title">📊 Real-Time Charts</div>
-  <div style="max-width: 1000px; margin: auto; padding: 20px;">
+  <div style="max-width:1000px;margin:auto;padding:20px;">
     <canvas id="chartVoltage"></canvas>
     <canvas id="chartCurrent"></canvas>
     <canvas id="chartSpeed"></canvas>
   </div>
 
-  <!-- 🔊 ปุ่มเปิด/ปิดเสียง -->
+  <!-- ปุ่มปิด/เปิดเสียง -->
   <button id="muteBtn">🔊 เปิดเสียงเตือน</button>
 
 <script>
-const firebaseConfig = { databaseURL: "https://test-data-f19-default-rtdb.asia-southeast1.firebasedatabase.app" };
+const firebaseConfig={databaseURL:"https://test-data-f19-default-rtdb.asia-southeast1.firebasedatabase.app"};
 firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+const db=firebase.database();
 
-// --- Chart.js ---
-const chart = (ctx, label, color) => new Chart(ctx, {
-  type: "line",
-  data: { labels: [], datasets: [{ label, data: [], borderColor: color, fill: false, tension: 0.25 }] },
-  options: { responsive: true }
-});
-const cV = chart(document.getElementById("chartVoltage"), "Voltage (V)", "#8E24AA");
-const cI = chart(document.getElementById("chartCurrent"), "Current (A)", "#CE93D8");
-const cS = chart(document.getElementById("chartSpeed"), "Speed (rpm)", "#6A1B9A");
+// Chart.js
+const chart=(ctx,label,color)=>new Chart(ctx,{type:"line",data:{labels:[],datasets:[{label,data:[],borderColor:color,fill:false,tension:0.25}]},options:{responsive:true}});
+const cV=chart(document.getElementById("chartVoltage"),"Voltage (V)","#8E24AA");
+const cI=chart(document.getElementById("chartCurrent"),"Current (A)","#CE93D8");
+const cS=chart(document.getElementById("chartSpeed"),"Speed (rpm)","#6A1B9A");
 
-function push(ch, val) {
-  if (!val && val !== 0) return;
-  if (ch.data.labels.length > 30) { ch.data.labels.shift(); ch.data.datasets[0].data.shift(); }
+function push(ch,val){
+  if(!val&&val!==0)return;
+  if(ch.data.labels.length>30){ch.data.labels.shift();ch.data.datasets[0].data.shift();}
   ch.data.labels.push(new Date().toLocaleTimeString());
   ch.data.datasets[0].data.push(val);
   ch.update();
 }
 
-// --- Sound Alert ---
-let mute = false;
-let alarmActive = false;
-let alarmInterval = null;
-const muteBtn = document.getElementById("muteBtn");
+// --- เสียงเตือน ---
+let mute=false;
+let alarmActive=false;
+let alarmInterval=null;
+const muteBtn=document.getElementById("muteBtn");
 
-muteBtn.addEventListener("click", () => {
-  mute = !mute;
-  muteBtn.textContent = mute ? "🔇 ปิดเสียงเตือน" : "🔊 เปิดเสียงเตือน";
-  if (mute && alarmInterval) stopAlarm();
+muteBtn.addEventListener("click",()=>{
+  mute=!mute;
+  muteBtn.textContent=mute?"🔇 ปิดเสียงเตือน":"🔊 เปิดเสียงเตือน";
 });
 
-function playBeep() {
-  if (mute) return;
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.frequency.value = 750;
-  gain.gain.value = 0.4; // 🔊 ดังขึ้น
+function playBeep(){
+  if(mute)return;
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
+  osc.frequency.value=850;        // ความถี่เสียงสูงขึ้น
+  gain.gain.value=0.7;            // 🔊 ดังมากขึ้น
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.start();
-  osc.stop(ctx.currentTime + 0.2);
+  osc.stop(ctx.currentTime+0.25);
 }
 
-function startAlarm() {
-  if (alarmActive || mute) return;
-  alarmActive = true;
-  alarmInterval = setInterval(playBeep, 500); // 🔁 ดังทุก 0.5 วินาที
+function startAlarm(){
+  if(alarmActive)return;
+  alarmActive=true;
+  alarmInterval=setInterval(playBeep,500);  // ดังทุก 0.5 วินาที
+}
+function stopAlarm(){
+  alarmActive=false;
+  if(alarmInterval){clearInterval(alarmInterval);alarmInterval=null;}
 }
 
-function stopAlarm() {
-  alarmActive = false;
-  if (alarmInterval) clearInterval(alarmInterval);
-  alarmInterval = null;
+// --- การอัปเดตและตรวจ NO UPDATE ---
+const lastUpdate={};
+const timeoutSec=5;
+function update(id,val,unit=""){
+  const el=document.getElementById(id);
+  const note=document.getElementById(id+"-no");
+  el.textContent=val!==undefined?val+" "+unit:"--";
+  if(note)note.style.display="none";
+  el.parentElement.style.borderColor="#ddd";
+  lastUpdate[id]=Date.now();
 }
 
-// --- Update + NO UPDATE ---
-const lastUpdate = {};
-const timeoutSec = 5;
-
-function update(id, val, unit = "") {
-  const el = document.getElementById(id);
-  const note = document.getElementById(id + "-no");
-  el.textContent = val !== undefined ? val + " " + unit : "--";
-  if (note) note.style.display = "none";
-  el.parentElement.style.borderColor = "#ddd";
-  lastUpdate[id] = Date.now();
-}
-
-function checkNoUpdate() {
-  const now = Date.now(); 
-  let lost = false;
-  for (let key in lastUpdate) {
-    if ((now - lastUpdate[key]) / 1000 > timeoutSec) {
-      const note = document.getElementById(key + "-no");
-      if (note) note.style.display = "block";
-      lost = true;
+function checkNoUpdate(){
+  const now=Date.now();
+  let lost=false;
+  for(let key in lastUpdate){
+    if((now-lastUpdate[key])/1000>timeoutSec){
+      const note=document.getElementById(key+"-no");
+      if(note)note.style.display="block";
+      lost=true;
     }
   }
-  if (lost) startAlarm();
-  else stopAlarm();
+  if(lost)startAlarm(); else stopAlarm();
 }
-setInterval(checkNoUpdate, 1000);
+setInterval(checkNoUpdate,1000);
 
-// --- Firebase Data ---
-db.ref("/ESP32_Data/Location1").on("value", snap => {
-  const d = snap.val(); if (!d) return;
-  if (d.Voltage !== undefined) { update("voltage", d.Voltage, "V"); push(cV, d.Voltage); }
-  if (d.Current !== undefined) { update("current", d.Current, "A"); push(cI, d.Current); }
-  if (d.SOC_Percent !== undefined) { update("soc", d.SOC_Percent, "%"); }
-  if (d.Temp_High !== undefined) { update("tHigh", d.Temp_High, "°C"); }
-  if (d.Temp_Low !== undefined) { update("tLow", d.Temp_Low, "°C"); }
+// --- Firebase ---
+db.ref("/ESP32_Data/Location1").on("value",snap=>{
+  const d=snap.val();if(!d)return;
+  if(d.Voltage!==undefined){update("voltage",d.Voltage,"V");push(cV,d.Voltage);}
+  if(d.Current!==undefined){update("current",d.Current,"A");push(cI,d.Current);}
+  if(d.SOC_Percent!==undefined){update("soc",d.SOC_Percent,"%");}
+  if(d.Temp_High!==undefined){update("tHigh",d.Temp_High,"°C");}
+  if(d.Temp_Low!==undefined){update("tLow",d.Temp_Low,"°C");}
 });
 
-db.ref("/ESP32_Data/Location2").on("value", snap => {
-  const d = snap.val(); if (!d) return;
-  if (d.Speed !== undefined) { update("speed", d.Speed, "rpm"); push(cS, d.Speed); }
-  if (d.Udc !== undefined) { update("udc", d.Udc, "V"); }
-  if (d.Idc !== undefined) { update("idc", d.Idc, "A"); }
-  if (d.Uaux !== undefined) { update("uaux", d.Uaux, "V"); }
-  if (d.Timestamp !== undefined) {
-    document.getElementById("timestamp").textContent = new Date(parseFloat(d.Timestamp) * 1000).toLocaleString();
+db.ref("/ESP32_Data/Location2").on("value",snap=>{
+  const d=snap.val();if(!d)return;
+  if(d.Speed!==undefined){update("speed",d.Speed,"rpm");push(cS,d.Speed);}
+  if(d.Udc!==undefined){update("udc",d.Udc,"V");}
+  if(d.Idc!==undefined){update("idc",d.Idc,"A");}
+  if(d.Uaux!==undefined){update("uaux",d.Uaux,"V");}
+  if(d.Timestamp!==undefined){
+    document.getElementById("timestamp").textContent=new Date(parseFloat(d.Timestamp)*1000).toLocaleString();
   }
 });
 </script>
