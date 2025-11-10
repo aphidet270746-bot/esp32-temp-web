@@ -164,26 +164,44 @@ function push(ch, val) {
   ch.update();
 }
 
-// --- Sound ---
+// --- Sound Alert ---
 let mute = false;
-document.getElementById("muteBtn").addEventListener("click", () => {
+let alarmActive = false;
+let alarmInterval = null;
+const muteBtn = document.getElementById("muteBtn");
+
+muteBtn.addEventListener("click", () => {
   mute = !mute;
-  document.getElementById("muteBtn").textContent = mute ? "🔇 ปิดเสียงเตือน" : "🔊 เปิดเสียงเตือน";
+  muteBtn.textContent = mute ? "🔇 ปิดเสียงเตือน" : "🔊 เปิดเสียงเตือน";
+  if (mute && alarmInterval) stopAlarm();
 });
+
 function playBeep() {
   if (mute) return;
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.frequency.value = 660;
-  gain.gain.value = 0.1;
+  osc.frequency.value = 750;
+  gain.gain.value = 0.4; // 🔊 ดังขึ้น
   osc.connect(gain);
   gain.connect(ctx.destination);
   osc.start();
-  osc.stop(ctx.currentTime + 0.25);
+  osc.stop(ctx.currentTime + 0.2);
 }
 
-// --- Update Check ---
+function startAlarm() {
+  if (alarmActive || mute) return;
+  alarmActive = true;
+  alarmInterval = setInterval(playBeep, 500); // 🔁 ดังทุก 0.5 วินาที
+}
+
+function stopAlarm() {
+  alarmActive = false;
+  if (alarmInterval) clearInterval(alarmInterval);
+  alarmInterval = null;
+}
+
+// --- Update + NO UPDATE ---
 const lastUpdate = {};
 const timeoutSec = 5;
 
@@ -197,7 +215,8 @@ function update(id, val, unit = "") {
 }
 
 function checkNoUpdate() {
-  const now = Date.now(); let lost = false;
+  const now = Date.now(); 
+  let lost = false;
   for (let key in lastUpdate) {
     if ((now - lastUpdate[key]) / 1000 > timeoutSec) {
       const note = document.getElementById(key + "-no");
@@ -205,7 +224,8 @@ function checkNoUpdate() {
       lost = true;
     }
   }
-  if (lost) playBeep();
+  if (lost) startAlarm();
+  else stopAlarm();
 }
 setInterval(checkNoUpdate, 1000);
 
