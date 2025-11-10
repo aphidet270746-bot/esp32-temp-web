@@ -78,25 +78,25 @@
       box-shadow: 0 2px 8px rgba(106,27,154,0.2);
       margin-bottom: 30px;
     }
-    footer {
-      text-align: center;
-      padding: 15px;
-      background: #ede7f6;
-    }
+
+    /* 🔊 Floating Sound Button */
     #soundBtn {
-      padding: 8px 18px;
-      background: #8E24AA;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #7B1FA2;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      font-size: 1.8em;
       cursor: pointer;
-      font-size: 1em;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       transition: 0.3s;
     }
-    #soundBtn.off {
-      background: #aaa;
-      color: #333;
-    }
+    #soundBtn:hover { transform: scale(1.1); background: #8E24AA; }
+    #soundBtn.off { background: #aaa; color: #333; }
   </style>
 </head>
 
@@ -138,25 +138,14 @@
     ⏱ Last Update (Location2): <span id="timestamp2">--</span>
   </div>
 
-  <div class="section-title">📊 Real-Time Charts</div>
-  <div style="max-width: 1000px; margin: auto; padding: 20px;">
-    <canvas id="chartVoltage"></canvas>
-    <canvas id="chartCurrent"></canvas>
-    <canvas id="chartSpeed"></canvas>
-    <canvas id="chartTemp"></canvas>
-  </div>
-
-  <footer>
-    🔊 เสียงเตือน NO UPDATE:
-    <button id="soundBtn" class="off" onclick="toggleSound()">ปิดอยู่</button>
-  </footer>
+  <button id="soundBtn" class="off" onclick="toggleSound()">🔇</button>
 
 <script>
 const firebaseConfig={databaseURL:"https://test-data-f19-default-rtdb.asia-southeast1.firebasedatabase.app"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 
-// --- Chart.js ---
+// Chart.js setup
 const chart=(ctx,label,color)=>new Chart(ctx,{type:"line",data:{labels:[],datasets:[{label,data:[],borderColor:color,fill:false,tension:0.25}]},options:{responsive:true}});
 const cV=chart(document.getElementById("chartVoltage"),"Voltage (V)","#8E24AA");
 const cI=chart(document.getElementById("chartCurrent"),"Current (A)","#CE93D8");
@@ -165,16 +154,37 @@ const cT=chart(document.getElementById("chartTemp"),"Temperature (°C)","#AB47BC
 
 function push(ch,val){ if(!val&&val!==0)return; if(ch.data.labels.length>30){ch.data.labels.shift();ch.data.datasets[0].data.shift();} ch.data.labels.push(new Date().toLocaleTimeString()); ch.data.datasets[0].data.push(val); ch.update(); }
 
-// --- Sound Alert ---
+// 🔊 Sound Alert System
 let soundEnabled=false;
 const soundBtn=document.getElementById("soundBtn");
 const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
-function playBeep(){ if(!soundEnabled)return; const osc=audioCtx.createOscillator(); const gain=audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type="sine"; osc.frequency.setValueAtTime(880,audioCtx.currentTime); gain.gain.setValueAtTime(0.2,audioCtx.currentTime); osc.start(); osc.stop(audioCtx.currentTime+0.2); }
-function toggleSound(){ soundEnabled=!soundEnabled; soundBtn.textContent=soundEnabled?"เปิดอยู่":"ปิดอยู่"; soundBtn.classList.toggle("off",!soundEnabled); }
 
-// --- Update & No Update ---
+function playBeep(){
+  if(!soundEnabled)return;
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type="square"; osc.frequency.setValueAtTime(900,audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.25,audioCtx.currentTime);
+  osc.start(); osc.stop(audioCtx.currentTime+0.25);
+}
+
+function toggleSound(){
+  soundEnabled=!soundEnabled;
+  soundBtn.textContent=soundEnabled?"🔊":"🔇";
+  soundBtn.classList.toggle("off",!soundEnabled);
+}
+
+// Update + NO UPDATE logic
 const lastUpdate={},timeoutSec=5;
-function update(id,val,unit=""){ const el=document.getElementById(id); const note=document.getElementById(id+"-no"); el.textContent=val!==undefined?val+" "+unit:"--"; el.parentElement.style.borderColor="#ddd"; if(note) note.style.display="none"; lastUpdate[id]=Date.now(); }
+function update(id,val,unit=""){
+  const el=document.getElementById(id);
+  const note=document.getElementById(id+"-no");
+  el.textContent=val!==undefined?val+" "+unit:"--";
+  if(note) note.style.display="none";
+  el.parentElement.style.borderColor="#ddd";
+  lastUpdate[id]=Date.now();
+}
 
 function checkNoUpdate(){
   const now=Date.now(); let anyNoUpdate=false;
@@ -189,7 +199,7 @@ function checkNoUpdate(){
 }
 setInterval(checkNoUpdate,1000);
 
-// --- Firebase Data ---
+// Firebase listeners
 db.ref("/ESP32_Data/Location1").on("value",snap=>{
   const d=snap.val();if(!d)return;
   if(d.Voltage!==undefined){update("voltage",d.Voltage,"V");push(cV,d.Voltage);}
