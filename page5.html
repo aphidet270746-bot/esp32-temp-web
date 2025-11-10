@@ -186,17 +186,27 @@
       document.getElementById("muteBtn").textContent = mute ? "🔇 ปิดเสียงเตือน" : "🔊 เปิดเสียงเตือน";
     });
 
+    // 🔊 ฟังก์ชันเสียงเตือนแบบสองโทน (ดังและชัด)
     function playBeep() {
       if (mute || !audioCtx) return;
-      const osc = audioCtx.createOscillator();
+      const osc1 = audioCtx.createOscillator();
+      const osc2 = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 660;
-      gain.gain.value = 0.05;
-      osc.connect(gain);
+      gain.gain.value = 0.25; // เพิ่มความดัง
+
+      osc1.type = "square";
+      osc1.frequency.value = 660;
+      osc2.type = "square";
+      osc2.frequency.value = 880;
+
+      osc1.connect(gain);
+      osc2.connect(gain);
       gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.25);
+
+      osc1.start();
+      osc2.start(audioCtx.currentTime + 0.2);
+      osc1.stop(audioCtx.currentTime + 0.4);
+      osc2.stop(audioCtx.currentTime + 0.6);
     }
 
     // ---------------- Data Lost ----------------
